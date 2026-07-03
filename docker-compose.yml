@@ -1,10 +1,10 @@
 services:
   project-zomboid-server-docker-arm64:
-    build: .
+    image: rm968211/project-zomboid-server-docker-arm64:latest
     container_name: project-zomboid-server
     restart: unless-stopped
     environment:
-      TZ: Asia/Seoul
+      TZ: America/New_York
       SERVERNAME: servertest
     ports:
       - '16261:16261/udp'
