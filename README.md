@@ -1,50 +1,62 @@
 # project-zomboid-server-docker-arm64
 
-ARM64 용 프로젝트 좀보이드 서버 도커 이미지
+Project Zomboid dedicated server Docker image for ARM64.
 
-관련 잡담은 [https://blog.joyfui.com/1295](https://blog.joyfui.com/1295)
+This is a fork of [joyfuI/project-zomboid-server-docker-arm64](https://github.com/joyfuI/project-zomboid-server-docker-arm64), maintained by [@rm968211](https://github.com/rm968211). Full credit to the original author for the ARM64/FEX-Emu approach.
 
-### 사용법
+The image uses [FEX-Emu](https://fex-emu.com/) to run the x86 Project Zomboid server binary on ARM64 hardware. This is necessary because Valve does not provide native ARM64 server binaries for Project Zomboid.
+
+---
+
+## Usage
 
 ```bash
 docker run -d \
   --name project-zomboid-server \
   -p 16261:16261/udp \
   -p 16262:16262/udp \
-  -v <zomboid-folder>:/home/steam/Zomboid \  # 서버 데이터가 저장되는 경로
-  -v <workshop-folder>:/home/steam/pzserver/steamapps/workshop \  # 스팀 워크샵(모드) 파일이 저장되는 경로
-  -e TZ=Asia/Seoul \  # 타임존
-  -e SERVERNAME=servertest \  # 서버 이름(디렉터리 이름)
+  -v <zomboid-folder>:/home/steam/Zomboid \
+  -v <workshop-folder>:/home/steam/pzserver/steamapps/workshop \
+  -e TZ=America/New_York \
+  -e SERVERNAME=servertest \
   --restart unless-stopped \
-  ghcr.io/joyfui/project-zomboid-server-docker-arm64:latest
+  rm968211/project-zomboid-server-docker-arm64:latest
 ```
 
-주석을 참고해서 환경변수와 볼륨 마운트 경로를 적절하게 수정해서 컨테이너를 생성한 후
+On first run, the server binary will be downloaded via SteamCMD. This may take several minutes. The server will not be accessible until the download completes.
+
+Once the container is running, attach to the server console:
 
 ```bash
 docker exec -it project-zomboid-server /bin/bash
-```
-
-위 명령어로 컨테이너 내부로 들어간 뒤에
-
-```bash
 ./run.sh
 ```
 
-위 명령어로 콘솔에 진입할 수 있습니다. 컨테이너 최초 실행 시 서버 다운로드에 시간이 소요되며 다운로드 완료 전까지 콘솔 진입이 안 됩니다.\
-최초 서버 실행 후 admin 비밀번호 지정이 필요합니다. 콘솔에 진입해서 지정해 주세요.
+You must set an admin password on first launch via the in-game console. After setting it, detach from the screen session with `Ctrl+A, D` to leave the server running in the background.
 
-백그라운드에서도 서버 실행을 유지하기 위해 screen을 사용했습니다. 따라서 서버 실행 후 다시 셸로 나오고 싶으면 screen 사용법과 같이 "Ctrl + a, d"를 입력하면 서버를 실행한 채로 나올 수 있습니다.
+If the server crashes or exits, it will automatically restart after 10 seconds.
 
-서버가 죽거나 종료되면 10초 후 자동으로 다시 시작합니다.
+---
 
-서버 설정에 대한 정보는 [https://pzwiki.net/wiki/Dedicated_server](https://pzwiki.net/wiki/Dedicated_server)
+## Environment Variables
 
-### 기타
+| Variable | Default | Description |
+|---|---|---|
+| `TZ` | — | Timezone (e.g. `America/New_York`) |
+| `SERVERNAME` | `servertest` | Server name / save directory |
+| `CPU_MHZ` | `2000` | Hint to FEX-Emu for CPU frequency |
 
-- 서버 최초 실행 시 admin 비밀번호 지정 때문에 사용자의 키 입력이 필수인데 이 때문에 반드시 한번은 콘솔에 진입해야 한다. 해결하려면 최초 실행 전에 외부에서 직접 DB에 비밀번호를 때려 넣어야 하나 싶긴 한데 해싱된 값이 저장되는 듯하여 실패...
-- 백그라운드에 있는 서버에 직접 명령을 보낼 수 있으면 좋겠는데 FIFO를 시도해 봤지만, 블록 문제로 실패했다. 흠...
+## Volumes
 
-### 참고 링크
+| Path | Description |
+|---|---|
+| `/home/steam/Zomboid` | Server data — saves, config, logs |
+| `/home/steam/pzserver/steamapps/workshop` | Workshop mod files |
 
-- [https://steamcommunity.com/app/108600/discussions/1/3415433168012191380/#c4522260857741595094](https://steamcommunity.com/app/108600/discussions/1/3415433168012191380/#c4522260857741595094)
+---
+
+## Notes
+
+- On first launch, the admin password must be set interactively via the console (`./run.sh`). There is currently no way to pre-set it via environment variable.
+- The server runs inside a `screen` session. Use `./run.sh` to attach, and `Ctrl+A, D` to detach without stopping it.
+- Server config reference: [PZWiki — Dedicated Server](https://pzwiki.net/wiki/Dedicated_server)
