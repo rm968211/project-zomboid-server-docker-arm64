@@ -8,10 +8,6 @@ on:
       - main
   workflow_dispatch:
     inputs:
-      push_version_tags:
-        description: "Push semver version tags (e.g. 1.0.0, 1.0, 1)"
-        type: boolean
-        default: true
       push_latest:
         description: "Push the latest tag"
         type: boolean
@@ -58,12 +54,12 @@ jobs:
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/project-zomboid-server-docker-arm64
           tags: |
-            type=raw,value=${{ steps.version.outputs.version }},enable=${{ steps.version.outputs.found == 'true' && (github.event_name != 'workflow_dispatch' || inputs.push_version_tags == 'true') }}
-            type=raw,value=${{ steps.version.outputs.major_minor }},enable=${{ steps.version.outputs.found == 'true' && (github.event_name != 'workflow_dispatch' || inputs.push_version_tags == 'true') }}
-            type=raw,value=${{ steps.version.outputs.major }},enable=${{ steps.version.outputs.found == 'true' && (github.event_name != 'workflow_dispatch' || inputs.push_version_tags == 'true') }}
+            type=raw,value=${{ steps.version.outputs.version }},enable=${{ github.ref_type == 'tag' && steps.version.outputs.found == 'true' }}
+            type=raw,value=${{ steps.version.outputs.major_minor }},enable=${{ github.ref_type == 'tag' && steps.version.outputs.found == 'true' }}
+            type=raw,value=${{ steps.version.outputs.major }},enable=${{ github.ref_type == 'tag' && steps.version.outputs.found == 'true' }}
             type=sha
           flavor: |
-            latest=true
+            latest=${{ github.event_name != 'workflow_dispatch' || inputs.push_latest == 'true' }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
